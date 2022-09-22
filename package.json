@@ -1,0 +1,19 @@
+{
+  "name": "part8c-library-backend",
+  "version": "1.0.0",
+  "description": "part8c-library-backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "part8c-library-backend"
+  },
+  "author": "antonio",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server": "^3.10.2",
+    "graphql": "^16.6.0"
+  }
+}
