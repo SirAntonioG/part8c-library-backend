@@ -7,6 +7,12 @@ const Book = require('./models/book');
 const Author = require('./models/author');
 const User = require('./models/user');
 
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY';
+
+const { PubSub } = require('graphql-subscriptions');
+const pubsub = new PubSub();
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
@@ -17,6 +23,8 @@ mongoose
   .catch((error) => {
     console.log('error connection to MongoDB:', error.message);
   });
+
+mongoose.set('debug', true);
 
 let authors = [
   {
@@ -164,27 +172,21 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    bookCount: async () => Book.collection.countDocuments(),
-    authorCount: async () => Author.collection.countDocuments(),
+    bookCount: () => Book.collection.countDocuments(),
     allBooks: async (root, args) => {
-      if (!args.author && !args.genre) {
-        const books = await Book.find({});
-        return books;
-      }
-
-      const byAuthorOrGenre = await Book.find({
-        $or: [{ author: args.author }, { genres: { $in: [args.genre] } }],
-      });
-      return byAuthorOrGenre;
+      const books = await Book.find({}).populate('author');
+      return books;
     },
     allAuthors: async (root, args) => {
       const authors = await Author.find({});
       return authors;
     },
+    authorCount: () => Author.collection.countDocuments(),
     me: (root, args, context) => {
       return context.currentUser;
     },
   },
+
   Mutation: {
     addBook: async (root, args, context) => {
       const currentUser = context.currentUser;
@@ -275,6 +277,12 @@ const resolvers = {
       return { value: jwt.sign(userForToken, JWT_SECRET) };
     },
   },
+
+  Subscription: {
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED']),
+    },
+  },
 };
 
 const server = new ApolloServer({
@@ -290,6 +298,7 @@ const server = new ApolloServer({
   },
 });
 
-server.listen().then(({ url }) => {
+server.listen().then(({ url, subscriptionsUrl }) => {
   console.log(`Server ready at ${url}`);
+  console.log(`Subscriptions ready at ${subscriptionsUrl}`);
 });
